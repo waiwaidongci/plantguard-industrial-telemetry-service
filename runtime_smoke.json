@@ -1,0 +1,12 @@
+{
+  "start": "go run ./cmd/api",
+  "workdir": ".",
+  "env": {
+    "PLANTGUARD_SERVER_ADDRESS": "127.0.0.1:18080",
+    "PLANTGUARD_DATABASE_DRIVER": "sqlite",
+    "PLANTGUARD_DATABASE_DSN": "file:runtime-smoke.db?cache=shared"
+  },
+  "ready_url": "http://127.0.0.1:18080/healthz",
+  "ready_status": [200],
+  "startup_timeout": 15
+}

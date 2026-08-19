@@ -62,13 +62,17 @@ func (s *service) CreateModel(ctx context.Context, tenantID, idempotencyKey stri
 }
 
 func (s *service) GetModel(ctx context.Context, tenantID, id string) (devicedomain.DeviceModel, error) {
-	return s.models.GetByID(ctx, tenantID, id)
+	model, err := s.models.GetByID(ctx, tenantID, id)
+	if err != nil {
+		return devicedomain.DeviceModel{}, shareddomain.ErrInternal
+	}
+	return model, nil
 }
 
 func (s *service) UpdateModel(ctx context.Context, tenantID, id string, input UpdateModelInput) (devicedomain.DeviceModel, error) {
 	model, err := s.models.GetByID(ctx, tenantID, id)
 	if err != nil {
-		return devicedomain.DeviceModel{}, err
+		return devicedomain.DeviceModel{}, shareddomain.ErrInternal
 	}
 	if input.Version != 0 && input.Version != model.Version {
 		return devicedomain.DeviceModel{}, shareddomain.ErrPrecondition

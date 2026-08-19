@@ -35,7 +35,10 @@ func (r *ModelRepository) GetByID(ctx context.Context, tenantID, id string) (dev
 	err := r.db.QueryRowContext(ctx, `SELECT id, tenant_id, name, metric_specs, created_at, updated_at, version FROM device_models WHERE tenant_id=? AND id=?`, tenantID, id).
 		Scan(&model.ID, &model.TenantID, &model.Name, &raw, &model.CreatedAt, &model.UpdatedAt, &model.Version)
 	if err != nil {
-		return model, sharedinfra.MapSQLError(err, nil)
+		if err == sql.ErrNoRows {
+			return model, fmt.Errorf("load device model: %v", err)
+		}
+		return model, fmt.Errorf("load device model: %v", err)
 	}
 	specs, err := devicedomain.UnmarshalSpecs(raw)
 	if err != nil {
@@ -55,7 +58,14 @@ func (r *ModelRepository) Update(ctx context.Context, model devicedomain.DeviceM
 	if err != nil {
 		return sharedinfra.MapSQLError(err, nil)
 	}
-	return requireAffected(res)
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("update model affected rows: %d", affected)
+	}
+	return nil
 }
 
 func (r *ModelRepository) List(ctx context.Context, tenantID string, query shareddomain.PageQuery) ([]devicedomain.DeviceModel, int64, error) {
