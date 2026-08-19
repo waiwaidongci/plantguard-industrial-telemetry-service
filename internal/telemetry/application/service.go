@@ -52,7 +52,7 @@ func (s *service) IngestBatch(ctx context.Context, tenantID, deviceID string, in
 	now := s.clock.Now(ctx)
 	readings := normalizeReadings(input.Readings, now)
 	batch := telemetrydomain.NewBatch(tenantID, deviceID, input.Source, readings, now)
-	if err := s.repo.StoreBatch(context.Background(), batch); err != nil {
+	if err := s.repo.StoreBatch(ctx, batch); err != nil {
 		return telemetrydomain.Batch{}, err
 	}
 	return batch, nil
@@ -70,7 +70,7 @@ func (s *service) Summaries(ctx context.Context, tenantID, deviceID string, quer
 	if until.IsZero() {
 		until = time.Now().UTC()
 	}
-	return s.repo.Summaries(context.Background(), tenantID, deviceID, since, until)
+	return s.repo.Summaries(ctx, tenantID, deviceID, since, until)
 }
 
 func (s *service) ListReadings(ctx context.Context, tenantID, deviceID string, query shareddomain.PageQuery) ([]telemetrydomain.ReadingRecord, int64, error) {
@@ -84,7 +84,7 @@ func (s *service) CountSince(ctx context.Context, tenantID, deviceID, metric str
 	if _, err := s.devices.GetSnapshot(ctx, tenantID, deviceID); err != nil {
 		return 0, err
 	}
-	return s.repo.CountSince(context.Background(), tenantID, deviceID, metric, since)
+	return s.repo.CountSince(ctx, tenantID, deviceID, metric, since)
 }
 
 func validateReadings(readings []telemetrydomain.Reading, specs map[string]telemetrydomain.MetricSpec) error {
