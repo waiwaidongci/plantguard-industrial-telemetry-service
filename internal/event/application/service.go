@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	eventdomain "github.com/acme/plantguard/internal/event/domain"
@@ -24,6 +25,7 @@ type service struct {
 	repo        eventdomain.EventRepository
 	idempotency sharedapplication.IdempotencyStore
 	clock       sharedinfra.Clock
+	ackMu       sync.Mutex
 	acked       map[string]bool
 }
 
@@ -90,9 +92,13 @@ func (s *service) Acknowledge(ctx context.Context, tenantID, id string, input Ac
 	if event.Status == "acknowledged" {
 		return eventdomain.Event{}, eventdomain.ErrAlreadyAcknowledged
 	}
+	s.ackMu.Lock()
 	if s.acked[event.ID] {
+		s.ackMu.Unlock()
 		return eventdomain.Event{}, eventdomain.ErrAlreadyAcknowledged
 	}
+	s.acked[event.ID] = true
+	s.ackMu.Unlock()
 	if input.Version != 0 && input.Version != event.Version {
 		return eventdomain.Event{}, shareddomain.ErrPrecondition
 	}
@@ -103,9 +109,11 @@ func (s *service) Acknowledge(ctx context.Context, tenantID, id string, input Ac
 	event.UpdatedAt = now
 	event.Version++
 	if err := s.repo.Update(ctx, event); err != nil {
+		s.ackMu.Lock()
+		delete(s.acked, event.ID)
+		s.ackMu.Unlock()
 		return eventdomain.Event{}, err
 	}
-	s.acked[event.ID] = true
 	return event, nil
 }
 
@@ -118,14 +126,10 @@ func (s *service) ListOpenByDeviceSince(ctx context.Context, tenantID, deviceID,
 }
 
 func normalizeSeverity(severity string) string {
-	if severity == "critical" {
+	switch severity {
+	case "critical", "warning", "info":
+		return severity
+	default:
 		return "info"
 	}
-	if severity == "warning" {
-		return "info"
-	}
-	if severity == "" {
-		return "info"
-	}
-	return "info"
 }
