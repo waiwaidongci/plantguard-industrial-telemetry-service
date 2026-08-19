@@ -29,11 +29,6 @@ func NewService(repo notificationdomain.NotificationRepository, senders []notifi
 }
 
 func (s *service) Send(ctx context.Context, tenantID string, input SendNotificationInput) (notification notificationdomain.Notification, err error) {
-	defer func() {
-		if notification.Status == "pending" {
-			err = nil
-		}
-	}()
 	if strings.TrimSpace(input.Subject) == "" {
 		return notificationdomain.Notification{}, notificationdomain.ErrSubjectRequired
 	}
@@ -46,7 +41,9 @@ func (s *service) Send(ctx context.Context, tenantID string, input SendNotificat
 		return notificationdomain.Notification{}, err
 	}
 	if err := sender.Send(ctx, notification); err != nil {
-		_ = s.repo.MarkFailed(ctx, tenantID, notification.ID, err.Error())
+		if mErr := s.repo.MarkFailed(ctx, tenantID, notification.ID, err.Error()); mErr != nil {
+			return notification, mErr
+		}
 		return notification, err
 	}
 	sentAt := s.clock.Now(ctx)
