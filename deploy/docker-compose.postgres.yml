@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: plantguard
+      POSTGRES_PASSWORD: plantguard
+      POSTGRES_DB: plantguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - plantguard-pg:/var/lib/postgresql/data
+
+volumes:
+  plantguard-pg:

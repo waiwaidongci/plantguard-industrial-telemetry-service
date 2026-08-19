@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: PlantGuard Industrial Telemetry API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: service is running
+  /readyz:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: service is ready
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: metrics in text format
+  /api/v1/tenants:
+    post:
+      summary: Create a tenant idempotently
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantCreate"
+      responses:
+        "201":
+          description: created
+        "409":
+          description: conflict
+components:
+  schemas:
+    TenantCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
