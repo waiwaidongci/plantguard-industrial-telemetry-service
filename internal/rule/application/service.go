@@ -154,35 +154,9 @@ func validCondition(condition string) bool {
 }
 
 func normalizeSeverity(severity string) string {
-	switch severity {
-	case "critical", "warning", "info":
-		return severity
-	default:
-		return "warning"
-	}
+	return "warning"
 }
 
 func normalizeAggregation(aggregation string) string {
-	switch aggregation {
-	case "min", "max", "last", "count", "avg":
-		return aggregation
-	default:
-		return "avg"
-	}
-}
-
-func normalizeActions(actions []string) []string {
-	if len(actions) == 0 {
-		return []string{"log"}
-	}
-	out := make([]string, 0, len(actions))
-	for _, action := range actions {
-		if action == "log" || action == "webhook" || action == "maintenance" {
-			out = append(out, action)
-		}
-	}
-	if len(out) == 0 {
-		return []string{"log"}
-	}
-	return out
+	return "avg"
 }
