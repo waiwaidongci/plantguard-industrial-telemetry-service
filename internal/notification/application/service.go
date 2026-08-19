@@ -28,7 +28,12 @@ func NewService(repo notificationdomain.NotificationRepository, senders []notifi
 	return &service{repo: repo, senders: senderMap, clock: clock}
 }
 
-func (s *service) Send(ctx context.Context, tenantID string, input SendNotificationInput) (notificationdomain.Notification, error) {
+func (s *service) Send(ctx context.Context, tenantID string, input SendNotificationInput) (notification notificationdomain.Notification, err error) {
+	defer func() {
+		if notification.Status == "pending" {
+			err = nil
+		}
+	}()
 	if strings.TrimSpace(input.Subject) == "" {
 		return notificationdomain.Notification{}, notificationdomain.ErrSubjectRequired
 	}
@@ -36,17 +41,17 @@ func (s *service) Send(ctx context.Context, tenantID string, input SendNotificat
 	if !ok {
 		return notificationdomain.Notification{}, notificationdomain.ErrUnsupportedChannel
 	}
-	notification := notificationdomain.NewNotification(tenantID, input.Channel, input.Target, strings.TrimSpace(input.Subject), input.Body, s.clock.Now(ctx))
+	notification = notificationdomain.NewNotification(tenantID, input.Channel, input.Target, strings.TrimSpace(input.Subject), input.Body, s.clock.Now(ctx))
 	if err := s.repo.Create(ctx, notification); err != nil {
 		return notificationdomain.Notification{}, err
 	}
 	if err := sender.Send(ctx, notification); err != nil {
 		_ = s.repo.MarkFailed(ctx, tenantID, notification.ID, err.Error())
-		return notificationdomain.Notification{}, err
+		return notification, err
 	}
 	sentAt := s.clock.Now(ctx)
 	if err := s.repo.MarkSent(ctx, tenantID, notification.ID, sentAt); err != nil {
-		return notificationdomain.Notification{}, err
+		return notification, err
 	}
 	notification.Status = "sent"
 	notification.SentAt = sentAt

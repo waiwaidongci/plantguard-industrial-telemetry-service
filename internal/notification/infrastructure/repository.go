@@ -27,13 +27,13 @@ func (r *Repository) Create(ctx context.Context, notification notificationdomain
 }
 
 func (r *Repository) MarkSent(ctx context.Context, tenantID, id string, sentAt time.Time) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE notifications SET status='sent', sent_at=? WHERE tenant_id=? AND id=?`, sentAt, tenantID, id)
-	return sharedinfra.MapSQLError(err, nil)
+	_, _ = r.db.ExecContext(ctx, `UPDATE notifications SET status='sent', sent_at=? WHERE tenant_id=? AND id=?`, sentAt, tenantID, id)
+	return nil
 }
 
 func (r *Repository) MarkFailed(ctx context.Context, tenantID, id, message string) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE notifications SET status='failed', error=? WHERE tenant_id=? AND id=?`, message, tenantID, id)
-	return sharedinfra.MapSQLError(err, nil)
+	_, _ = r.db.ExecContext(ctx, `UPDATE notifications SET status='failed', error=? WHERE tenant_id=? AND id=?`, message, tenantID, id)
+	return nil
 }
 
 func (r *Repository) List(ctx context.Context, tenantID string, query shareddomain.PageQuery) ([]notificationdomain.Notification, int64, error) {

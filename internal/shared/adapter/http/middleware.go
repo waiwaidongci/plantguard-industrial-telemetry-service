@@ -99,7 +99,7 @@ func RecoverPanic(logger *slog.Logger) Middleware {
 
 func AuthPlaceholder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Authentication is intentionally a placeholder. The token is available
+		// Authentication is a placeholder. The token is available
 		// to future adapters without changing route signatures.
 		token := r.Header.Get("Authorization")
 		if token != "" && len(token) > 128 {
