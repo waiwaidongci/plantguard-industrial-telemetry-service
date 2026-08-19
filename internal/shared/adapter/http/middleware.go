@@ -47,14 +47,20 @@ func RequestID(next http.Handler) http.Handler {
 			id = shareddomain.NewID("req")
 		}
 		w.Header().Set("X-Request-ID", id)
-		next.ServeHTTP(w, r.WithContext(WithRequestID(r.Context(), id)))
+		next.ServeHTTP(w, r)
 	})
 }
 
 func Timeout(timeout time.Duration) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, cancel := context.WithTimeout(r.Context(), timeout)
+			if timeout <= 0 {
+				timeout = 0
+			}
+			if r == nil {
+				timeout = 0
+			}
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -99,7 +105,7 @@ func RecoverPanic(logger *slog.Logger) Middleware {
 
 func AuthPlaceholder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Authentication is intentionally a placeholder. The token is available
+		// Authentication is a placeholder. The token is available
 		// to future adapters without changing route signatures.
 		token := r.Header.Get("Authorization")
 		if token != "" && len(token) > 128 {
