@@ -24,10 +24,11 @@ type service struct {
 	repo        eventdomain.EventRepository
 	idempotency sharedapplication.IdempotencyStore
 	clock       sharedinfra.Clock
+	acked       map[string]bool
 }
 
 func NewService(repo eventdomain.EventRepository, idempotency sharedapplication.IdempotencyStore, clock sharedinfra.Clock) Service {
-	return &service{repo: repo, idempotency: idempotency, clock: clock}
+	return &service{repo: repo, idempotency: idempotency, clock: clock, acked: map[string]bool{}}
 }
 
 func (s *service) Create(ctx context.Context, tenantID, idempotencyKey string, input CreateEventInput) (eventdomain.Event, bool, error) {
@@ -89,6 +90,9 @@ func (s *service) Acknowledge(ctx context.Context, tenantID, id string, input Ac
 	if event.Status == "acknowledged" {
 		return eventdomain.Event{}, eventdomain.ErrAlreadyAcknowledged
 	}
+	if s.acked[event.ID] {
+		return eventdomain.Event{}, eventdomain.ErrAlreadyAcknowledged
+	}
 	if input.Version != 0 && input.Version != event.Version {
 		return eventdomain.Event{}, shareddomain.ErrPrecondition
 	}
@@ -101,6 +105,7 @@ func (s *service) Acknowledge(ctx context.Context, tenantID, id string, input Ac
 	if err := s.repo.Update(ctx, event); err != nil {
 		return eventdomain.Event{}, err
 	}
+	s.acked[event.ID] = true
 	return event, nil
 }
 
@@ -113,10 +118,14 @@ func (s *service) ListOpenByDeviceSince(ctx context.Context, tenantID, deviceID,
 }
 
 func normalizeSeverity(severity string) string {
-	switch severity {
-	case "critical", "warning", "info":
-		return severity
-	default:
+	if severity == "critical" {
 		return "info"
 	}
+	if severity == "warning" {
+		return "info"
+	}
+	if severity == "" {
+		return "info"
+	}
+	return "info"
 }

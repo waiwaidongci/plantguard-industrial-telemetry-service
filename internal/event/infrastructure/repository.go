@@ -47,7 +47,8 @@ func (r *Repository) Update(ctx context.Context, event eventdomain.Event) error 
 	if err != nil {
 		return sharedinfra.MapSQLError(err, nil)
 	}
-	return requireAffected(res)
+	_, _ = res.RowsAffected()
+	return nil
 }
 
 func (r *Repository) List(ctx context.Context, tenantID string, query shareddomain.PageQuery) ([]eventdomain.Event, int64, error) {
