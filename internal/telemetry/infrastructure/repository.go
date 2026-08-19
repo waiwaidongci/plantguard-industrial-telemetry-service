@@ -22,7 +22,7 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (r *Repository) StoreBatch(ctx context.Context, batch telemetrydomain.Batch) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, err := r.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func (r *Repository) StoreBatch(ctx context.Context, batch telemetrydomain.Batch
 
 	aggregates := map[string]*aggregate{}
 	for _, reading := range batch.Readings {
-		_, err := tx.ExecContext(ctx, `INSERT INTO telemetry_readings(tenant_id, device_id, metric, value, unit, received_at, created_at) VALUES(?, ?, ?, ?, ?, ?, ?)`,
+		_, err := tx.ExecContext(context.Background(), `INSERT INTO telemetry_readings(tenant_id, device_id, metric, value, unit, received_at, created_at) VALUES(?, ?, ?, ?, ?, ?, ?)`,
 			batch.TenantID, batch.DeviceID, reading.Metric, reading.Value, reading.Unit, reading.Timestamp, batch.ReceivedAt)
 		if err != nil {
 			return sharedinfra.MapSQLError(err, nil)
@@ -78,7 +78,7 @@ func (a *aggregate) add(value float64) {
 func (r *Repository) upsertSummary(ctx context.Context, tx *sql.Tx, deviceID string, agg *aggregate) error {
 	var count int
 	var minValue, maxValue, avgValue, lastValue float64
-	err := tx.QueryRowContext(ctx, `SELECT sample_count, min_value, max_value, avg_value, last_value FROM telemetry_summaries WHERE device_id=? AND metric=? AND window_start=?`,
+	err := tx.QueryRowContext(context.Background(), `SELECT sample_count, min_value, max_value, avg_value, last_value FROM telemetry_summaries WHERE device_id=? AND metric=? AND window_start=?`,
 		deviceID, agg.metric, agg.windowStart).Scan(&count, &minValue, &maxValue, &avgValue, &lastValue)
 	if err == nil {
 		count += agg.count
@@ -86,14 +86,14 @@ func (r *Repository) upsertSummary(ctx context.Context, tx *sql.Tx, deviceID str
 		maxValue = math.Max(maxValue, agg.max)
 		avgValue = (avgValue*float64(count-agg.count) + agg.avg*float64(agg.count)) / float64(count)
 		lastValue = agg.last
-		_, err = tx.ExecContext(ctx, `UPDATE telemetry_summaries SET sample_count=?, min_value=?, max_value=?, avg_value=?, last_value=?, updated_at=? WHERE device_id=? AND metric=? AND window_start=?`,
+		_, err = tx.ExecContext(context.Background(), `UPDATE telemetry_summaries SET sample_count=?, min_value=?, max_value=?, avg_value=?, last_value=?, updated_at=? WHERE device_id=? AND metric=? AND window_start=?`,
 			count, minValue, maxValue, avgValue, lastValue, time.Now().UTC(), deviceID, agg.metric, agg.windowStart)
 		return err
 	}
 	if err != sql.ErrNoRows {
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO telemetry_summaries(device_id, metric, window_start, window_end, sample_count, min_value, max_value, avg_value, last_value, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err = tx.ExecContext(context.Background(), `INSERT INTO telemetry_summaries(device_id, metric, window_start, window_end, sample_count, min_value, max_value, avg_value, last_value, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		deviceID, agg.metric, agg.windowStart, agg.windowStart.Add(time.Minute), agg.count, agg.min, agg.max, agg.avg, agg.last, time.Now().UTC(), time.Now().UTC())
 	return err
 }
@@ -124,13 +124,13 @@ func (r *Repository) ListReadings(ctx context.Context, tenantID, deviceID string
 		args = append(args, v)
 	}
 	var total int64
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM telemetry_readings `+where, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM telemetry_readings `+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 	sort := allowedTelemetrySort(query.Sort)
 	listSQL := fmt.Sprintf(`SELECT device_id, metric, value, unit, received_at FROM telemetry_readings %s ORDER BY %s LIMIT ? OFFSET ?`, where, sort)
 	args = append(args, query.Limit(), query.Offset())
-	rows, err := r.db.QueryContext(ctx, listSQL, args...)
+	rows, err := r.db.QueryContext(context.Background(), listSQL, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -148,7 +148,7 @@ func (r *Repository) ListReadings(ctx context.Context, tenantID, deviceID string
 
 func (r *Repository) CountSince(ctx context.Context, tenantID, deviceID, metric string, since time.Time) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM telemetry_readings WHERE tenant_id=? AND device_id=? AND metric=? AND received_at>=?`, tenantID, deviceID, metric, since).Scan(&count)
+	err := r.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM telemetry_readings WHERE tenant_id=? AND device_id=? AND metric=? AND received_at>=?`, tenantID, deviceID, metric, since).Scan(&count)
 	return count, err
 }
 
