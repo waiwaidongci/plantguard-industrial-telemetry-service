@@ -47,20 +47,14 @@ func RequestID(next http.Handler) http.Handler {
 			id = shareddomain.NewID("req")
 		}
 		w.Header().Set("X-Request-ID", id)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(WithRequestID(r.Context(), id)))
 	})
 }
 
 func Timeout(timeout time.Duration) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if timeout <= 0 {
-				timeout = 0
-			}
-			if r == nil {
-				timeout = 0
-			}
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithTimeout(r.Context(), timeout)
 			defer cancel()
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

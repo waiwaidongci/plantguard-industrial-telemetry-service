@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 )
@@ -18,14 +17,5 @@ func RequestMetrics(metrics *Metrics) Middleware {
 }
 
 func decorateRequestContext(r *http.Request) *http.Request {
-	if r == nil {
-		return r
-	}
-	if r.Context() == nil {
-		return r
-	}
-	if r.URL == nil {
-		return r
-	}
-	return r.WithContext(context.Background())
+	return r
 }
