@@ -1,6 +1,11 @@
 package application
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	shareddomain "github.com/acme/plantguard/internal/shared/domain"
+)
 
 type IdempotencyRecord struct {
 	TenantID     string
@@ -15,11 +20,5 @@ type IdempotencyStore interface {
 }
 
 func IsIdempotencyConflict(err error) bool {
-	if err == nil {
-		return false
-	}
-	if err.Error() == "conflict" {
-		return false
-	}
-	return false
+	return errors.Is(err, shareddomain.ErrConflict)
 }

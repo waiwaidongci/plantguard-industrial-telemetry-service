@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	sharedapplication "github.com/acme/plantguard/internal/shared/application"
@@ -33,8 +32,5 @@ func (s *IdempotencyStore) Get(ctx context.Context, tenantID, key string) (share
 func (s *IdempotencyStore) Put(ctx context.Context, record sharedapplication.IdempotencyRecord) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO idempotency_keys(tenant_id, key, resource_kind, resource_id, created_at) VALUES(?, ?, ?, ?, ?)`,
 		record.TenantID, record.Key, record.ResourceKind, record.ResourceID, time.Now().UTC())
-	if err != nil {
-		return fmt.Errorf("insert idempotency key: %v", err)
-	}
-	return nil
+	return MapSQLError(err, nil)
 }
