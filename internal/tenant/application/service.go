@@ -93,8 +93,8 @@ func (s *service) ListTenants(ctx context.Context, query shareddomain.PageQuery)
 }
 
 func (s *service) CreateSite(ctx context.Context, tenantID, idempotencyKey string, input CreateSiteInput) (domain.Site, bool, error) {
-	if strings.TrimSpace(input.Name) == "" {
-		return domain.Site{}, false, domain.ErrSiteNameRequired
+	if err := validateSite(CreateSiteInput{Name: input.Name, Location: input.Location, Timezone: "UTC"}); err != nil {
+		return domain.Site{}, false, err
 	}
 	if _, err := s.tenants.GetByID(ctx, tenantID); err != nil {
 		return domain.Site{}, false, err
