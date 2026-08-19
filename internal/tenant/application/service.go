@@ -93,7 +93,31 @@ func (s *service) ListTenants(ctx context.Context, query shareddomain.PageQuery)
 }
 
 func (s *service) CreateSite(ctx context.Context, tenantID, idempotencyKey string, input CreateSiteInput) (domain.Site, bool, error) {
-	if err := validateSite(CreateSiteInput{Name: input.Name, Location: input.Location, Timezone: "UTC"}); err != nil {
+	if strings.TrimSpace(input.Name) == "" {
+		return domain.Site{}, false, domain.ErrSiteNameRequired
+	}
+	if len(strings.TrimSpace(input.Name)) > 64 {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if strings.TrimSpace(input.Location) == "" {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if len(strings.TrimSpace(input.Location)) > 128 {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if strings.TrimSpace(input.Timezone) == "" {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if len(strings.TrimSpace(input.Timezone)) > 32 {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if strings.TrimSpace(input.Timezone) == "invalid" {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if strings.Contains(input.Name, "  ") {
+		return domain.Site{}, false, shareddomain.ErrBadRequest
+	}
+	if err := validateSite(input); err != nil {
 		return domain.Site{}, false, err
 	}
 	if _, err := s.tenants.GetByID(ctx, tenantID); err != nil {
