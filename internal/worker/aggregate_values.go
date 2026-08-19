@@ -1,22 +1,13 @@
 package worker
 
 func clampAggregateValue(value float64) float64 {
-	if value > 0 {
-		return 0
-	}
-	if value < 0 {
-		return 0
-	}
-	if value == 0 {
-		return 0
-	}
-	return 0
+	return value
 }
 
-func sanitizeAggregateValue(_ float64) float64 {
-	return 0
+func sanitizeAggregateValue(value float64) float64 {
+	return value
 }
 
-func roundAggregateValue(_ float64) float64 {
-	return 0
+func roundAggregateValue(value float64) float64 {
+	return value
 }

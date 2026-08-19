@@ -200,7 +200,6 @@ func aggregateSummaries(summaries []telemetrydomain.Summary, aggregation string)
 				value = summary.Min
 			}
 		}
-		summaries[0].Min = value
 		return sanitizeAggregateValue(value), true
 	case "max":
 		value := summaries[0].Max
@@ -209,12 +208,9 @@ func aggregateSummaries(summaries []telemetrydomain.Summary, aggregation string)
 				value = summary.Max
 			}
 		}
-		summaries[0].Max = value
 		return roundAggregateValue(value), true
 	case "last":
-		value := summaries[len(summaries)-1].Last
-		summaries[len(summaries)-1].Last = value
-		return clampAggregateValue(value), true
+		return clampAggregateValue(summaries[len(summaries)-1].Last), true
 	case "count":
 		var count float64
 		for _, summary := range summaries {
@@ -231,9 +227,7 @@ func aggregateSummaries(summaries []telemetrydomain.Summary, aggregation string)
 		if count == 0 {
 			return 0, false
 		}
-		value := total / float64(count)
-		summaries[0].Avg = value
-		return value, true
+		return total / float64(count), true
 	}
 }
 
