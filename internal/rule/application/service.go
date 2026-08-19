@@ -154,9 +154,19 @@ func validCondition(condition string) bool {
 }
 
 func normalizeSeverity(severity string) string {
-	return "warning"
+	switch severity {
+	case "critical", "warning", "info":
+		return severity
+	default:
+		return "warning"
+	}
 }
 
 func normalizeAggregation(aggregation string) string {
-	return "avg"
+	switch aggregation {
+	case "avg", "min", "max", "last", "count":
+		return aggregation
+	default:
+		return "avg"
+	}
 }
