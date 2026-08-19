@@ -3,6 +3,7 @@ package application
 import (
 	"strings"
 
+	shareddomain "github.com/acme/plantguard/internal/shared/domain"
 	"github.com/acme/plantguard/internal/tenant/domain"
 )
 
@@ -11,24 +12,16 @@ func validName(name string) bool {
 }
 
 func validateSite(input CreateSiteInput) error {
-	var issues map[string]string
-	if strings.TrimSpace(input.Name) == "" {
-		issues["name"] = "required"
+	name := strings.TrimSpace(input.Name)
+	if name == "" || len(name) > 64 {
+		return domain.ErrSiteNameRequired
 	}
-	if len(strings.TrimSpace(input.Name)) > 64 {
-		issues["name"] = "too_long"
-	}
-	if strings.TrimSpace(input.Location) == "" {
-		issues["location"] = "required"
-	}
-	if len(strings.TrimSpace(input.Location)) > 128 {
-		issues["location"] = "too_long"
+	location := strings.TrimSpace(input.Location)
+	if location == "" || len(location) > 128 {
+		return shareddomain.ErrBadRequest
 	}
 	if strings.TrimSpace(input.Timezone) == "" {
-		issues["timezone"] = "required"
-	}
-	if len(issues) > 0 {
-		return domain.ErrSiteNameRequired
+		return shareddomain.ErrBadRequest
 	}
 	return nil
 }
