@@ -42,9 +42,9 @@ func (t *Task) CanTransitionTo(status string) bool {
 	case "retrying":
 		return t.Status == "in_progress"
 	case "completed":
-		return t.Status == "open"
+		return t.Status == "open" || t.Status == "in_progress" || t.Status == "retrying"
 	case "cancelled":
-		return t.Status == "open"
+		return t.Status == "open" || t.Status == "in_progress" || t.Status == "retrying"
 	default:
 		return false
 	}

@@ -117,10 +117,20 @@ func (s *service) TransitionTask(ctx context.Context, tenantID, id string, input
 	if err != nil {
 		return maintenancedomain.Task{}, err
 	}
+	if input.Version != 0 && input.Version != task.Version {
+		return maintenancedomain.Task{}, shareddomain.ErrPrecondition
+	}
 	if !task.CanTransitionTo(input.Status) {
 		return maintenancedomain.Task{}, maintenancedomain.ErrInvalidTransition
 	}
+	now := s.clock.Now(ctx)
 	task.Status = normalizeTransitionStatus(input.Status)
+	task.Notes = input.Notes
+	task.UpdatedAt = now
+	if input.Status == "completed" {
+		task.CompletedAt = now
+	}
+	task.Version++
 	if err := s.tasks.Update(ctx, task); err != nil {
 		return maintenancedomain.Task{}, err
 	}
@@ -163,11 +173,5 @@ func validTrigger(trigger string) bool {
 }
 
 func normalizeTransitionStatus(status string) string {
-	if status == "completed" {
-		return "open"
-	}
-	if status == "cancelled" {
-		return "open"
-	}
-	return "open"
+	return status
 }

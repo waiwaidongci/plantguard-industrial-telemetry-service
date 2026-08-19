@@ -158,7 +158,7 @@ func (r *TaskRepository) List(ctx context.Context, tenantID string, query shared
 }
 
 func (r *TaskRepository) ListOpenByDevice(ctx context.Context, tenantID, deviceID string) ([]maintenancedomain.Task, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, tenant_id, plan_id, device_id, status, due_at, completed_at, notes, created_at, updated_at, version FROM maintenance_tasks WHERE tenant_id=? AND device_id=? AND status IN ('open','in_progress') ORDER BY due_at ASC`, tenantID, deviceID)
+	rows, err := r.db.QueryContext(ctx, `SELECT id, tenant_id, plan_id, device_id, status, due_at, completed_at, notes, created_at, updated_at, version FROM maintenance_tasks WHERE tenant_id=? AND device_id=? AND status IN ('open','in_progress','retrying') ORDER BY due_at ASC`, tenantID, deviceID)
 	if err != nil {
 		return nil, err
 	}
